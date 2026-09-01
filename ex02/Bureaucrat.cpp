@@ -92,7 +92,7 @@ void    Bureaucrat::signForm(AForm &form) {
 	}
 }
 
-void Bureaucrat::executeForm(AForm const &form)
+void Bureaucrat::executeForm(AForm const &form) const
 {
     try {
         form.execute(*this);

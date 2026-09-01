@@ -3,7 +3,7 @@
 #include <ctime>
 
 RobotomyRequestForm::RobotomyRequestForm(std::string const &target)
-    : AForm("RobotomyRequestForm", 72, 45), _target(target) {}
+    : AForm("Robotomy Request", 72, 45), _target(target) {}
 
 RobotomyRequestForm::RobotomyRequestForm(RobotomyRequestForm const &other)
     : AForm(other), _target(other._target) {}

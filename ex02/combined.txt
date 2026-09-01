@@ -1,0 +1,513 @@
+=== AForm.cpp ===
+#include "AForm.hpp"
+#include "Bureaucrat.hpp"
+
+AForm::AForm(std::string const &name, int gradeToSign, int gradeToExecute)
+    : _name(name), _signed(false), _gradeToSign(gradeToSign), _gradeToExecute(gradeToExecute)
+{
+    if (gradeToSign < 1 || gradeToExecute < 1)
+        throw GradeTooHighException();
+    if (gradeToSign > 150 || gradeToExecute > 150)
+        throw GradeTooLowException();
+}
+
+AForm::AForm(AForm const &other)
+    : _name(other._name), _signed(other._signed),
+      _gradeToSign(other._gradeToSign), _gradeToExecute(other._gradeToExecute) {}
+
+AForm &AForm::operator=(AForm const &other)
+{
+    if (this != &other)
+        _signed = other._signed;
+    return *this;
+}
+
+AForm::~AForm() {}
+
+std::string const   &AForm::getName() const           { return _name; }
+bool                AForm::isSigned() const           { return _signed; }
+int                 AForm::getGradeToSign() const     { return _gradeToSign; }
+int                 AForm::getGradeToExecute() const  { return _gradeToExecute; }
+
+void AForm::beSigned(Bureaucrat const &b)
+{
+    if (b.getGrade() > _gradeToSign)
+        throw GradeTooLowException();
+    _signed = true;
+}
+
+// The elegant approach: base class checks conditions, then calls pure virtual
+void AForm::execute(Bureaucrat const &executor) const
+{
+    if (!_signed)
+        throw FormNotSignedException();
+    if (executor.getGrade() > _gradeToExecute)
+        throw GradeTooLowException();
+    executeAction(); // polymorphic dispatch to concrete class
+}
+
+const char *AForm::GradeTooHighException::what() const throw()  { return "Form grade too high!"; }
+const char *AForm::GradeTooLowException::what() const throw()   { return "Form grade too low!"; }
+const char *AForm::FormNotSignedException::what() const throw()  { return "Form is not signed!"; }
+
+std::ostream &operator<<(std::ostream &os, AForm const &f)
+{
+    os << "Form " << f.getName()
+       << " | signed: " << (f.isSigned() ? "yes" : "no")
+       << " | grade to sign: " << f.getGradeToSign()
+       << " | grade to execute: " << f.getGradeToExecute();
+    return os;
+}
+
+
+=== Bureaucrat.cpp ===
+#include "Bureaucrat.hpp"
+#include "AForm.hpp"
+
+
+/* Constructors / Destructor */
+Bureaucrat::Bureaucrat() : _name("Default"), _grade(150) {}
+
+Bureaucrat::Bureaucrat(const std::string &name, int grade)
+	: _name(name), _grade(150)
+{
+	setGrade(grade);
+}
+
+Bureaucrat::Bureaucrat(const Bureaucrat &other)
+	: _name(other._name), _grade(other._grade) {}
+
+Bureaucrat::~Bureaucrat() {}
+
+
+
+/* Assignment */
+Bureaucrat &Bureaucrat::operator=(const Bureaucrat &other)
+{
+	if (this != &other)
+		setGrade(other._grade);
+	return (*this);
+}
+
+
+/* Private Setter */
+void	Bureaucrat::setGrade(int grade)
+{
+	if (grade < 1)
+		throw GradeTooHighException();
+	if (grade > 150)
+		throw GradeTooLowException();
+	_grade = grade;
+}
+
+
+/* Getters */
+const std::string	&Bureaucrat::getName() const
+{
+	return (_name);
+}
+
+int	Bureaucrat::getGrade() const
+{
+	return (_grade);
+}
+
+
+/* Grade Operations */
+void	Bureaucrat::incrementGrade()
+{
+	setGrade(_grade - 1);
+}
+
+void	Bureaucrat::decrementGrade()
+{
+	setGrade(_grade + 1);
+}
+
+
+/* Exceptions */
+const char *Bureaucrat::GradeTooHighException::what() const throw()
+{
+	return ("Grade too high");
+}
+
+const char *Bureaucrat::GradeTooLowException::what() const throw()
+{
+	return ("Grade too low");
+}
+
+
+/* Ostream */
+std::ostream	&operator<<(std::ostream &os, const Bureaucrat &b)
+{
+	os << b.getName() << ", bureaucrat grade " << b.getGrade();
+	return (os);
+}
+
+void    Bureaucrat::signForm(AForm &form) {
+	try {
+		form.beSigned(*this);
+		std::cout << _name << " signed " << form.getName() << std::endl;
+	}
+	catch (std::exception &e) {
+		std::cout << _name << " couldn't sign " << form.getName()
+                  << " because " << e.what() << "." << std::endl;
+	}
+}
+
+void Bureaucrat::executeForm(AForm const &form)
+{
+    try {
+        form.execute(*this);
+        std::cout << _name << " executed " << form.getName() << std::endl;
+    } catch (std::exception &e) {
+        std::cout << _name << " couldn't execute " << form.getName()
+                  << " because " << e.what() << std::endl;
+    }
+}
+
+
+=== PresidentialPardonForm.cpp ===
+#include "PresidentialPardonForm.hpp"
+
+PresidentialPardonForm::PresidentialPardonForm(std::string const &target)
+    : AForm("PresidentialPardonForm", 25, 5), _target(target) {}
+
+PresidentialPardonForm::PresidentialPardonForm(PresidentialPardonForm const &other)
+    : AForm(other), _target(other._target) {}
+
+PresidentialPardonForm &PresidentialPardonForm::operator=(PresidentialPardonForm const &other)
+{
+    if (this != &other) {
+        AForm::operator=(other);
+        _target = other._target;
+    }
+    return *this;
+}
+
+PresidentialPardonForm::~PresidentialPardonForm() {}
+
+void PresidentialPardonForm::executeAction() const
+{
+    std::cout << _target << " has been pardoned by Zaphod Beeblebrox." << std::endl;
+}
+
+
+=== RobotomyRequestForm.cpp ===
+#include "RobotomyRequestForm.hpp"
+#include <cstdlib>
+#include <ctime>
+
+RobotomyRequestForm::RobotomyRequestForm(std::string const &target)
+    : AForm("RobotomyRequestForm", 72, 45), _target(target) {}
+
+RobotomyRequestForm::RobotomyRequestForm(RobotomyRequestForm const &other)
+    : AForm(other), _target(other._target) {}
+
+RobotomyRequestForm &RobotomyRequestForm::operator=(RobotomyRequestForm const &other)
+{
+    if (this != &other) {
+        AForm::operator=(other);
+        _target = other._target;
+    }
+    return *this;
+}
+
+RobotomyRequestForm::~RobotomyRequestForm() {}
+
+void RobotomyRequestForm::executeAction() const
+{
+    std::cout << "DRRRRRRRRRR... BZZZZZT... *drilling noises*" << std::endl;
+    // seed only once — use a static flag
+    static bool seeded = false;
+    if (!seeded) {
+        std::srand(std::time(NULL));
+        seeded = true;
+    }
+    if (std::rand() % 2)
+        std::cout << _target << " has been robotomized successfully!" << std::endl;
+    else
+        std::cout << "Robotomy failed on " << _target << std::endl;
+}
+
+
+=== ShrubberyCreationForm.cpp ===
+#include "ShrubberyCreationForm.hpp"
+
+ShrubberyCreationForm::ShrubberyCreationForm(std::string const &target)
+    : AForm("ShrubberyCreationForm", 145, 137), _target(target) {}
+
+ShrubberyCreationForm::ShrubberyCreationForm(ShrubberyCreationForm const &other)
+    : AForm(other), _target(other._target) {}
+
+ShrubberyCreationForm &ShrubberyCreationForm::operator=(ShrubberyCreationForm const &other)
+{
+    if (this != &other) {
+        AForm::operator=(other);
+        _target = other._target;
+    }
+    return *this;
+}
+
+ShrubberyCreationForm::~ShrubberyCreationForm() {}
+
+void ShrubberyCreationForm::executeAction() const
+{
+    std::string filename = _target + "_shrubbery";
+    std::ofstream file(filename.c_str()); // c_str() needed in C++98
+    if (!file.is_open())
+        throw std::runtime_error("Cannot open file");
+    file << "       *       " << std::endl;
+    file << "      ***      " << std::endl;
+    file << "     *****     " << std::endl;
+    file << "    *******    " << std::endl;
+    file << "   *********   " << std::endl;
+    file << "      |||      " << std::endl;
+    file << "       *       " << std::endl;
+    file << "      ***      " << std::endl;
+    file << "     *****     " << std::endl;
+    file << "      |||      " << std::endl;
+    file.close();
+}
+
+
+=== main.cpp ===
+#include "Bureaucrat.hpp"
+#include "AForm.hpp"
+#include "ShrubberyCreationForm.hpp"
+#include "RobotomyRequestForm.hpp"
+#include "PresidentialPardonForm.hpp"
+
+int main()
+{
+    // Shrubbery: sign 145, exec 137
+    try {
+        Bureaucrat gardener("Gardener", 137);
+        ShrubberyCreationForm shrub("garden");
+        gardener.signForm(shrub);
+        gardener.executeForm(shrub);
+        // check garden_shrubbery file was created
+    } catch (std::exception &e) {
+        std::cout << "Exception: " << e.what() << std::endl;
+    }
+
+    // Robotomy: sign 72, exec 45
+    try {
+        Bureaucrat robo("Robomaster", 45);
+        RobotomyRequestForm robotomy("Bender");
+        robo.signForm(robotomy);
+        robo.executeForm(robotomy);
+        robo.executeForm(robotomy); // run twice to see 50% randomness
+    } catch (std::exception &e) {
+        std::cout << "Exception: " << e.what() << std::endl;
+    }
+
+    // Pardon: sign 25, exec 5
+    try {
+        Bureaucrat prez("President", 5);
+        PresidentialPardonForm pardon("Zaphod");
+        prez.signForm(pardon);
+        prez.executeForm(pardon);
+    } catch (std::exception &e) {
+        std::cout << "Exception: " << e.what() << std::endl;
+    }
+
+    // Try to execute unsigned form
+    try {
+        Bureaucrat b("B", 1);
+        ShrubberyCreationForm f("test");
+        b.executeForm(f); // not signed → error message
+    } catch (std::exception &e) {
+        std::cout << "Exception: " << e.what() << std::endl;
+    }
+
+    return 0;
+}
+
+
+=== AForm.hpp ===
+#ifndef AFORM_HPP
+# define AFORM_HPP
+
+# include <iostream>
+# include <exception>
+# include <string>
+
+class Bureaucrat;
+
+class AForm
+{
+public:
+    AForm(std::string const &name, int gradeToSign, int gradeToExecute);
+    AForm(AForm const &other);
+    AForm &operator=(AForm const &other);
+    virtual ~AForm();
+
+    std::string const   &getName() const;
+    bool                isSigned() const;
+    int                 getGradeToSign() const;
+    int                 getGradeToExecute() const;
+
+    void beSigned(Bureaucrat const &b);
+
+    // Public execute: checks signed + grade, then calls executeAction()
+    void execute(Bureaucrat const &executor) const;
+
+    class GradeTooHighException : public std::exception {
+    public:
+        virtual const char *what() const throw();
+    };
+    class GradeTooLowException : public std::exception {
+    public:
+        virtual const char *what() const throw();
+    };
+    class FormNotSignedException : public std::exception {
+    public:
+        virtual const char *what() const throw();
+    };
+
+protected:
+    // Subclasses implement this — it's what the form actually does
+    virtual void executeAction() const = 0;
+
+private:
+    std::string const   _name;
+    bool                _signed;
+    int const           _gradeToSign;
+    int const           _gradeToExecute;
+};
+
+std::ostream &operator<<(std::ostream &os, AForm const &f);
+
+#endif
+
+
+=== Bureaucrat.hpp ===
+#ifndef BUREAUCRAT_HPP
+# define BUREAUCRAT_HPP
+
+#include <iostream>
+#include <string>
+#include <exception>
+
+class AForm;
+
+class Bureaucrat
+{
+private:
+	const std::string	_name;
+	int					_grade;
+
+	void	setGrade(int grade);
+
+public:
+	// OCF
+	Bureaucrat();
+	Bureaucrat(const std::string &name, int grade);
+	Bureaucrat(const Bureaucrat &other);
+	~Bureaucrat();
+
+	Bureaucrat	&operator=(const Bureaucrat &other);
+
+	// Getters
+	const std::string	&getName() const;
+	int					getGrade() const;
+
+	// Grade modification
+	void	incrementGrade();
+	void	decrementGrade();
+	void    signForm(AForm &form);
+	void 	executeForm(AForm const &form); 
+
+	// Exceptions
+	class GradeTooHighException : public std::exception
+	{
+	public:
+		virtual const char *what() const throw();
+	};
+
+	class GradeTooLowException : public std::exception
+	{
+	public:
+		virtual const char *what() const throw();
+	};
+};
+
+std::ostream	&operator<<(std::ostream &os, const Bureaucrat &b);
+
+#endif
+
+
+=== PresidentialPardonForm.hpp ===
+#ifndef PRESIDENTIALPARDONFORM_HPP
+# define PRESIDENTIALPARDONFORM_HPP
+
+# include "AForm.hpp"
+
+class PresidentialPardonForm : public AForm
+{
+public:
+    PresidentialPardonForm(std::string const &target);
+    PresidentialPardonForm(PresidentialPardonForm const &other);
+    PresidentialPardonForm &operator=(PresidentialPardonForm const &other);
+    ~PresidentialPardonForm();
+
+protected:
+    void executeAction() const;
+
+private:
+    std::string _target;
+};
+
+#endif
+
+
+=== RobotomyRequestForm.hpp ===
+#ifndef ROBOTOMYREQUESTFORM_HPP
+# define ROBOTOMYREQUESTFORM_HPP
+
+# include "AForm.hpp"
+
+class RobotomyRequestForm : public AForm
+{
+public:
+    RobotomyRequestForm(std::string const &target);
+    RobotomyRequestForm(RobotomyRequestForm const &other);
+    RobotomyRequestForm &operator=(RobotomyRequestForm const &other);
+    ~RobotomyRequestForm();
+
+protected:
+    void executeAction() const;
+
+private:
+    std::string _target;
+};
+
+#endif
+
+
+=== ShrubberyCreationForm.hpp ===
+#ifndef SHRUBBERYCREATIONFORM_HPP
+# define SHRUBBERYCREATIONFORM_HPP
+
+# include "AForm.hpp"
+# include <fstream>
+
+class ShrubberyCreationForm : public AForm
+{
+public:
+    ShrubberyCreationForm(std::string const &target);
+    ShrubberyCreationForm(ShrubberyCreationForm const &other);
+    ShrubberyCreationForm &operator=(ShrubberyCreationForm const &other);
+    ~ShrubberyCreationForm();
+
+protected:
+    void executeAction() const;
+
+private:
+    std::string _target;
+};
+
+#endif
+
+

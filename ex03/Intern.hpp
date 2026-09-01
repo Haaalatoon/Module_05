@@ -13,6 +13,12 @@ public:
     ~Intern();
 
     AForm *makeForm(std::string const &name, std::string const &target);
+
+private:
+    // Member functions (not static)
+    AForm *makeShrubbery(std::string const &target);
+    AForm *makeRobotomy(std::string const &target);
+    AForm *makePresidential(std::string const &target);
 };
 
 #endif

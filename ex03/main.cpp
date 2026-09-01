@@ -25,7 +25,7 @@ int main()
         delete shrub;
     }
 
-    // ✅ NEW TEST: presidential pardon
+    // Valid form: presidential pardon
     AForm *pardon = someRandomIntern.makeForm("presidential pardon", "Arthur");
     if (pardon) {
         Bureaucrat b("President", 1);

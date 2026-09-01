@@ -12,7 +12,7 @@ int main()
         bob.decrementGrade();
         std::cout << "After 2 decrements: " << bob << std::endl;
     } catch (std::exception &e) {
-        std::cout << "Exception: " << e.what() << std::endl; // No exception's thrown, yet
+        std::cout << "Exception: " << e.what() << std::endl;
     }
 
     // Test grade too high
@@ -32,7 +32,7 @@ int main()
     // Test increment at boundary
     try {
         Bureaucrat top("Top", 1);
-        top.incrementGrade(); // should throw
+        top.incrementGrade();
     } catch (std::exception &e) {
         std::cout << "Expected: " << e.what() << std::endl;
     }
@@ -40,7 +40,7 @@ int main()
     // Test decrement at lower boundary (grade 150)
     try {
         Bureaucrat bottom("Bottom", 150);
-        bottom.decrementGrade(); // should throw GradeTooLowException
+        bottom.decrementGrade();
     } catch (std::exception &e) {
         std::cout << "Expected: " << e.what() << std::endl;
     }
